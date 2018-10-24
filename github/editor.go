@@ -14,6 +14,8 @@ import (
 	"github.com/github/hub/git"
 )
 
+const Scissors = "------------------------ >8 ------------------------"
+
 func NewEditor(filename, topic, message string) (editor *Editor, err error) {
 	gitDir, err := git.Dir()
 	if err != nil {
@@ -52,12 +54,18 @@ type Editor struct {
 	openEditor func(program, file string) error
 }
 
-func (e *Editor) AddCommentedSection(text string) {
-	startRegexp := regexp.MustCompilePOSIX("^")
-	endRegexp := regexp.MustCompilePOSIX(" +$")
-	commentedText := startRegexp.ReplaceAllString(text, e.CS+" ")
-	commentedText = endRegexp.ReplaceAllString(commentedText, "")
-	e.Message = e.Message + "\n" + commentedText
+func (e *Editor) AddCommentedSections(sections []string) {
+	if len(sections) == 0 {
+		return
+	}
+	scissors := e.CS + " " + Scissors + "\n"
+	scissors += e.CS + " Do not modify or remove the line above." + "\n"
+	scissors += e.CS + " Everything below it will be ignored." + "\n"
+	e.Message = e.Message + "\n" + scissors
+
+	for _, section := range sections {
+		e.Message = e.Message + "\n" + section
+	}
 }
 
 func (e *Editor) DeleteFile() error {
@@ -77,9 +85,10 @@ func (e *Editor) EditContent() (content string, err error) {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		if e.CS == "" || !strings.HasPrefix(line, e.CS) {
-			unquotedLines = append(unquotedLines, line)
+		if strings.HasSuffix(line, Scissors) {
+			break
 		}
+		unquotedLines = append(unquotedLines, line)
 	}
 	if err = scanner.Err(); err != nil {
 		return

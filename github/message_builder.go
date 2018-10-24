@@ -26,9 +26,7 @@ func (b *MessageBuilder) Extract() (title, body string, err error) {
 		if err != nil {
 			return
 		}
-		for _, section := range b.commentedSections {
-			b.editor.AddCommentedSection(section)
-		}
+		b.editor.AddCommentedSections(b.commentedSections)
 		content, err = b.editor.EditContent()
 		if err != nil {
 			return
